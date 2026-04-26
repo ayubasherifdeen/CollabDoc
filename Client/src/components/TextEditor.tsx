@@ -5,8 +5,6 @@ import { useEffect, useState, useRef } from "react";
 
 type Props = {
     onReady: (quill: Quill) => void;
-    
-    
     cursors?: Record<string, { position: number; color: string; name: string }>;
 };
 
