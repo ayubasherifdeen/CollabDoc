@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function genDocId() {
   return Math.random().toString(36).slice(2, 8);
@@ -8,9 +9,11 @@ const LandingPage: React.FC = () => {
   const [joinLink, setJoinLink] = useState("");
   const [linkError, setLinkError] = useState("");
 
+  const navigate=useNavigate();
+
   const handleCreate = () => {
     const id = genDocId();
-    window.location.href = `/doc/${id}`;
+    navigate(`/doc/${id}`);
   };
 
   const handleJoin = () => {
@@ -19,11 +22,10 @@ const LandingPage: React.FC = () => {
       setLinkError("Paste a document link or ID");
       return;
     }
-
     // Accept either a full URL or just the doc ID
     try {
       const url = new URL(trimmed);
-      window.location.href = url.pathname;
+      navigate(url.pathname);
     } catch {
       // Not a URL — treat as raw doc ID
       if (trimmed.length < 4) {
@@ -58,7 +60,7 @@ const LandingPage: React.FC = () => {
             className="text-[17px] font-semibold text-stone-800 tracking-tight"
             style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
           >
-            Collab<span className="text-orange-600">Write</span>
+            Collab<span className="text-orange-600">Doc</span>
           </span>
         </div>
       </nav>

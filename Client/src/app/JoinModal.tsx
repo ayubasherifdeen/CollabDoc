@@ -67,7 +67,7 @@ const JoinModal: React.FC<Props> = ({ onJoin, onCancel }) => {
               className="text-[18px] font-semibold text-stone-800 tracking-tight"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
-              Collab<span className="text-orange-600">Write</span>
+              Collab<span className="text-orange-600">Doc</span>
             </span>
           </div>
           <p className="text-[13px] text-stone-400 mt-2">

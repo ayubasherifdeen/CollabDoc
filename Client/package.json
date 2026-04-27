@@ -14,6 +14,7 @@
     "quill": "^2.0.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.2",
     "socket.io-client": "^4.8.3",
     "tailwindcss": "^4.2.4"
   },
@@ -26,6 +27,7 @@
     "@types/quill": "^2.0.14",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.39.4",

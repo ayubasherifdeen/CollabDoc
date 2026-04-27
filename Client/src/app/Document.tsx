@@ -6,7 +6,7 @@ import Toolbar from "../components/Toolbar";
 import TextEditor from "../components/TextEditor";
 import UserPanel from "../components/UserPanel";
 
-const socket = io("http://localhost:4000");
+
 
 type Identity = { name: string; color: string };
 type Props = { docId: string; identity: Identity };
@@ -15,6 +15,7 @@ type SaveStatus = "idle" | "saving" | "saved";
 
 const Document: React.FC<Props> = ({ docId, identity }) => {
   const quillRef = useRef<Quill | null>(null);
+  const socketRef = useRef<ReturnType<typeof io> | null>(null);
   const [users, setUsers] = useState<{ id: string; name: string; color: string }[]>([]);
   const [cursors, setCursors] = useState<Record<string, CursorInfo>>({});
   const [docTitle, setDocTitle] = useState("Untitled Document");
@@ -45,7 +46,7 @@ const Document: React.FC<Props> = ({ docId, identity }) => {
 
       quill.on("text-change", (delta, _old, source) => {
         if (source !== "user") return;
-        socket.emit("text-change", {
+        socketRef.current?.emit("text-change", {
           delta,
           contents: quill.getContents(),
         });
@@ -54,7 +55,7 @@ const Document: React.FC<Props> = ({ docId, identity }) => {
 
       quill.on("selection-change", (range) => {
         if (!range) return;
-        socket.emit("cursor-move", {
+        socketRef.current?.emit("cursor-move", {
           position: range.index,
           color: identity.color,
           name: identity.name,
@@ -72,27 +73,29 @@ const Document: React.FC<Props> = ({ docId, identity }) => {
 
   // ── Socket listeners ───────────────────────────────────────────────────────
   useEffect(() => {
+     const socket = io("http://localhost:4000");
+  socketRef.current = socket;
     // Send identity along with join so server knows who this is
-    socket.emit("join-document", { docId, name: identity.name, color: identity.color });
+    socketRef.current.emit("join-document", { docId, name: identity.name, color: identity.color });
 
-    socket.on("load-document", (content: Delta) => {
+    socketRef.current.on("load-document", (content: Delta) => {
       quillRef.current?.setContents(content, "silent");
     });
 
-    socket.on("receive-changes", (delta: Delta) => {
+    socketRef.current.on("receive-changes", (delta: Delta) => {
       quillRef.current?.updateContents(delta, "api");
     });
 
-    socket.on("users-update", (u: { id: string; name: string; color: string }[]) => {
+    socketRef.current.on("users-update", (u: { id: string; name: string; color: string }[]) => {
       setUsers(u);
     });
 
-    socket.on("receive-cursor", ({ id, position, color, name }: { id: string } & CursorInfo) => {
+    socketRef.current.on("receive-cursor", ({ id, position, color, name }: { id: string } & CursorInfo) => {
       setCursors((prev) => ({ ...prev, [id]: { position, color, name } }));
     });
 
     // Remove cursor when a user leaves
-    socket.on("user-left", (id: string) => {
+    socketRef.current.on("user-left", (id: string) => {
       setCursors((prev) => {
         const next = { ...prev };
         delete next[id];
@@ -101,11 +104,7 @@ const Document: React.FC<Props> = ({ docId, identity }) => {
     });
 
     return () => {
-      socket.off("load-document");
-      socket.off("receive-changes");
-      socket.off("users-update");
-      socket.off("receive-cursor");
-      socket.off("user-left");
+     socketRef.current?.disconnect();
     };
   }, [docId, identity]);
 
