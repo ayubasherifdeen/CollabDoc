@@ -6,6 +6,12 @@ import Toolbar from "../components/Toolbar";
 import TextEditor from "../components/TextEditor";
 import UserPanel from "../components/UserPanel";
 
+import { Document as DocxDocument,
+   Paragraph,
+    TextRun,
+     HeadingLevel
+     } from "docx";
+import { saveAs } from "file-saver";
 
 
 type Identity = { name: string; color: string };
@@ -29,6 +35,56 @@ const Document: React.FC<Props> = ({ docId, identity }) => {
   const [shareCopied, setShareCopied] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const exportPDF = () =>{
+    const editorContent = quillRef.current?.root.innerHTML;
+  if (!editorContent) return;
+
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return;
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${docTitle}</title>
+        <style>
+          body {
+            font-family: 'Georgia', serif;
+            font-size: 13pt;
+            line-height: 1.8;
+            color: #1c1917;
+            max-width: 680px;
+            margin: 40px auto;
+            padding: 0 40px;
+          }
+          h1 { font-size: 22pt; margin-bottom: 12px; }
+          h2 { font-size: 16pt; margin-bottom: 8px; }
+          p  { margin-bottom: 6px; }
+          ul, ol { padding-left: 24px; }
+          blockquote {
+            border-left: 3px solid #ccc;
+            padding-left: 16px;
+            color: #666;
+            font-style: italic;
+          }
+          @media print {
+            body { margin: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>${docTitle}</h1>
+        ${editorContent}
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+  }
 
   const triggerSave = useCallback(() => {
     setSaveStatus("saving");
@@ -199,6 +255,32 @@ const Document: React.FC<Props> = ({ docId, identity }) => {
             {saveStatus === "idle" && <span>All changes saved</span>}
           </div>
         </div>
+        {/* Export buttons */}
+<div className="flex items-center gap-2">
+  <button
+    onClick={exportPDF}
+    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-semibold text-stone-600 bg-white border border-stone-200 hover:bg-stone-50 hover:border-stone-300 transition-all duration-150 shadow-sm"
+  >
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+      <polyline points="14,2 14,8 20,8"/>
+      <path d="M9 13h6M9 17h4"/>
+    </svg>
+    PDF
+  </button>
+
+  <button
+    
+    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-semibold text-stone-600 bg-white border border-stone-200 hover:bg-stone-50 hover:border-stone-300 transition-all duration-150 shadow-sm"
+  >
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+      <polyline points="14,2 14,8 20,8"/>
+      <path d="M12 18v-6M9 15l3 3 3-3"/>
+    </svg>
+    Word
+  </button>
+</div>
 
         <button
           onClick={handleShare}

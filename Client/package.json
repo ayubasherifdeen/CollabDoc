@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
+    "docx": "^9.6.1",
+    "file-saver": "^2.0.5",
     "quill": "^2.0.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
@@ -23,6 +25,7 @@
     "@eslint/js": "^9.39.4",
     "@rolldown/plugin-babel": "^0.2.3",
     "@types/babel__core": "^7.20.5",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^24.12.2",
     "@types/quill": "^2.0.14",
     "@types/react": "^19.2.14",
