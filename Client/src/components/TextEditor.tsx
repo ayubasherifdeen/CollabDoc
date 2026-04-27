@@ -9,7 +9,6 @@ type Props = {
 };
 
 const TextEditor: React.FC<Props> = ({
-
   onReady,
   cursors = {},
 }) => {
