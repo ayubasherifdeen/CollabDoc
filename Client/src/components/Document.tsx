@@ -48,63 +48,60 @@ const Document: React.FC<Props> = ({ docId }) => {
     }, 700);
   }, []);
 
-  const handleQuillReady = useCallback(
-    (quill: Quill) => {
-      quillRef.current = quill;
+  const handleQuillReady = useCallback((quill: Quill) => {
+  quillRef.current = quill;
 
-      // 1. Join room and receive initial document content
-      socket.emit("join-document", docId);
+  // Only wire up quill events here — no socket listeners
+  quill.on("text-change", (delta, _old, source) => {
+    if (source !== "user") return;
+    socket.emit("text-change", {
+      delta,
+      contents: quill.getContents(),
+    });
+    triggerSave();
+  });
 
-      socket.on("load-document", (content: Delta) => {
-        quill.setContents(content, "silent");
-      });
+  quill.on("selection-change", (range) => {
+    if (!range) return;
+    socket.emit("cursor-move", {
+      position: range.index,
+      color: myColor,
+      name: "You",
+    });
+    const formats = quill.getFormat(range);
+    setActiveFormats({
+      bold: !!formats.bold,
+      italic: !!formats.italic,
+      underline: !!formats.underline,
+    });
+  });
+}, [docId, triggerSave]);
 
-      // 2. Receive remote changes — apply without re-emitting
-      socket.on("receive-changes", (delta: Delta) => {
-        quill.updateContents(delta, "api");
-      });
+// Socket listeners in a separate effect — run once on mount
+useEffect(() => {
+  socket.emit("join-document", docId);
 
-      // 3. Send local changes
-      quill.on("text-change", (delta, _old, source) => {
-        if (source !== "user") return;
-        socket.emit("text-change", {
-          delta,
-          contents: quill.getContents(),
-        });
-        triggerSave();
-      });
+  socket.on("load-document", (content: Delta) => {
+    quillRef.current?.setContents(content, "silent");
+  });
 
-      // 4. User presence
-      socket.on("users-update", (u: string[]) => setUsers(u));
+  socket.on("receive-changes", (delta: Delta) => {
+    quillRef.current?.updateContents(delta, "api");
+  });
 
-      // 5. Remote cursors
-      socket.on(
-        "receive-cursor",
-        ({ id, position, color, name }: { id: string } & CursorInfo) => {
-          setCursors((prev) => ({ ...prev, [id]: { position, color, name } }));
-        },
-      );
+  socket.on("users-update", (u: string[]) => setUsers(u));
 
-      // 6. Emit cursor position on selection change
-      quill.on("selection-change", (range) => {
-        if (!range) return;
-        socket.emit("cursor-move", {
-          position: range.index,
-          color: myColor,
-          name: "You",
-        });
+  socket.on("receive-cursor", ({ id, position, color, name }: { id: string } & CursorInfo) => {
+    setCursors((prev) => ({ ...prev, [id]: { position, color, name } }));
+  });
 
-        // Update active format indicators in toolbar
-        const formats = quill.getFormat(range);
-        setActiveFormats({
-          bold: !!formats.bold,
-          italic: !!formats.italic,
-          underline: !!formats.underline,
-        });
-      });
-    },
-    [docId, triggerSave],
-  );
+  return () => {
+    socket.off("load-document");
+    socket.off("receive-changes");
+    socket.off("users-update");
+    socket.off("receive-cursor");
+  };
+}, [docId]);
 
   // ── Toolbar format commands ────────────────────────────────────────────────
   const execFormat = useCallback((format: string, value: unknown = true) => {
@@ -135,15 +132,7 @@ const Document: React.FC<Props> = ({ docId }) => {
     (quill as any).history?.[action]?.();
   }, []);
 
-  useEffect(() => {
-    return () => {
-      socket.off("load-document");
-      socket.off("receive-changes");
-      socket.off("users-update");
-      socket.off("receive-cursor");
-    };
-  }, []);
-
+  
   useEffect(() => {
     if (isTitleEditing) titleInputRef.current?.focus();
   }, [isTitleEditing]);
@@ -299,8 +288,8 @@ const Document: React.FC<Props> = ({ docId }) => {
         onBold={() => execFormat("bold")}
         onItalic={() => execFormat("italic")}
         onUnderline={() => execFormat("underline")}
-        onHeading1={() => execBlock("heading", 1)}
-        onHeading2={() => execBlock("heading", 2)}
+        onHeading1={() => execBlock("header", 1)}
+        onHeading2={() => execBlock("header", 2)}
         onUndo={() => execHistory("undo")}
         onRedo={() => execHistory("redo")}
         onAlignLeft={() => execBlock("align", false)}
